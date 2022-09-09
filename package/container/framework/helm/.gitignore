@@ -1,0 +1,6 @@
+config/*/certs/*/*
+persistent-mount/*/passwords.d/*
+!persistent-mount/*/passwords.d/passgen.py
+persistent-mount/*/tokens.d/*
+persistent-mount/condor/spool/*
+!.gitkeep

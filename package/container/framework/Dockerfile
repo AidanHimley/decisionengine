@@ -8,6 +8,7 @@ LABEL description="hepcloud/decision-engine-framework"
 
 # You can select another version at container build time by setting
 # this value to the expected version - ie 9.6
+ENV PG_VERSION=12
 ARG PG_VERSION=12
 
 # Set where to collect metrics "on disk"
@@ -62,5 +63,31 @@ RUN su - adm -s /bin/bash -c "git clone https://github.com/HEPCloud/decisionengi
     python3 -m pip install --prefix=/usr decisionengine[develop] ; \
     python3 -m pip uninstall -y decisionengine ; \
     rm -rf /tmp/decisionengine.git
+
+# Install minimal glideinwms
+RUN yum -y install \
+        yum-priorities \
+        https://repo.opensciencegrid.org/osg/3.5/osg-3.5-el7-release-latest.rpm; \
+    sed -i '0,/enabled/{s/enabled=0/enabled=1/}' /etc/yum.repos.d/osg-upcoming.repo; \
+    sed -i '0,/enabled/{s/enabled=0/enabled=1/}' /etc/yum.repos.d/osg-contrib.repo; \
+    sed -i '0,/enabled/{s/enabled=1/enabled=1\npriority=99/}' /etc/yum.repos.d/epel.repo; \
+    yum -y install \
+        glideinwms-vofrontend-libs \
+        glideinwms-vofrontend-glidein voms-clients-cpp osg-ca-certs \
+        fetch-crl vo-client glideinwms-minimal-condor glideinwms-userschedd \
+        glideinwms-usercollector glideinwms-vofrontend-core \
+        glideinwms-vofrontend-httpd httpd globus-proxy-utils;
+
+# Install other utilities
+RUN yum -y install \
+    http://ssirepo04.fnal.gov/repos/sl-fermicontexts-el7-x86_64/fermilab-util_kx509-3.1-1.el7.noarch.rpm \
+    krb5-workstation
+
+# Install decisionengine
+RUN curl http://ssi-rpm.fnal.gov/hep/ssi-hepcloud.repo > /etc/yum.repos.d/ssi-hepcloud.repo; \
+    curl http://ssi-rpm.fnal.gov/hep/ssi-hepcloud-dev.repo > /etc/yum.repos.d/ssi-hepcloud-dev.repo; \
+    yum -y install --enablerepo=ssi-hepcloud-dev \
+        decisionengine \
+        decisionengine_modules
 
 ENTRYPOINT ["/bin/bash"]

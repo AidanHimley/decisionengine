@@ -1,0 +1,85 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: decision-engine
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: decision-engine
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: decision-engine
+    spec:
+      restartPolicy: Always
+      containers:
+      - name: decision-engine
+        image: ahimley/decisionengine:dev
+        imagePullPolicy: Always
+        command: ['sh', '-c', 'sleep infinity']
+        volumeMounts:
+        - mountPath: /etc/grid-security/hostcert.pem
+          subPath: hostcert.pem
+          name: hostcert-secret
+        - mountPath: /etc/grid-security/hostkey.pem
+          subPath: hostkey.pem
+          name: hostkey-secret
+        - mountPath: /etc/condor/certs/condor_mapfile
+          subPath: condor_mapfile
+          name: condor-mapfile
+        - mountPath: /etc/decisionengine
+          name: de-config
+        - mountPath: /etc/decisionengine/config.d
+          name: de-config-configd
+        env:
+        - name: X509_USER_PROXY
+          value: /var/de/vo_proxy
+        resources:
+          limits:
+            cpu: 1
+            memory: 2Gi
+          requests:
+            cpu: 400m
+            memory: 1Gi
+      - name: postgres
+        image: postgres:12
+        env:
+        - name: POSTGRES_HOST_AUTH_METHOD
+          value: trust
+        - name: POSTGRES_DB
+          value: decisionengine
+      - name: redis
+        image: redis:6
+      volumes:
+        - name: hostcert-secret
+          secret:
+            secretName: certs-de
+            defaultMode: 0600
+            items:
+            - key: hostcert.pem
+              path: hostcert.pem
+        - name: hostkey-secret
+          secret:
+            secretName: certs-de
+            defaultMode: 0600
+            items:
+            - key: hostkey.pem
+              path: hostkey.pem
+        - name: condor-mapfile
+          configMap:
+            name: de-mapfile
+            defaultMode: 0644
+            items:
+            - key: condor_mapfile
+              path: condor_mapfile
+        - name: de-config
+          configMap:
+            name: de-config
+            defaultMode: 0644
+        - name: de-config-configd
+          configMap:
+            name: de-config-configd
+            defaultMode: 0644

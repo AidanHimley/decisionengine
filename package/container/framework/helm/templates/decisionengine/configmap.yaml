@@ -1,0 +1,25 @@
+{{- $globpath := printf "%s/condor_mapfile" .Values.deConfigMountRoot }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: de-mapfile
+data:
+{{ (.Files.Glob $globpath).AsConfig | indent 2 }}
+
+---
+{{- $globpath := printf "%s/decisionengine/*" .Values.deConfigMountRoot }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: de-config
+data:
+{{ (.Files.Glob $globpath).AsConfig | indent 2 }}
+
+---
+{{- $globpath := printf "%s/decisionengine/config.d/*" .Values.deConfigMountRoot }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: de-config-configd
+data:
+{{ (.Files.Glob $globpath).AsConfig | indent 2 }}
